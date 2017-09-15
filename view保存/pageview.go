@@ -2,7 +2,6 @@ package main
 
 import (
   "github.com/gin-gonic/gin"
-  //"net/http"
   "fmt"
   "time"
   "database/sql"
@@ -14,7 +13,7 @@ func main() {
   router.GET("/pageview", func(c *gin.Context) {
     path := c.Query("keyword")
 
-    db, err := sql.Open("postgres", "user=exam password=exam dbname=exam sslmode=disable")
+    db, err := sql.Open("postgres", "user=xxxxx password=xxxxx dbname=xxxxx sslmode=disable")
     checkErr(err)
 
     // 時間帯の取得

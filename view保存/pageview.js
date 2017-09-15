@@ -1,10 +1,7 @@
-var param = "path" + location.pathname;
-//window.alert(param);
+var param = "?keyword=" + location.pathname;
 
-var param2 = "?keyword=" + location.pathname;
-//location.href="http://18.221.113.158:8080/pageview" + param2;
+var url = "http://XXXXXXXXX/pageview" + param;
 
-var url = "http://18.221.113.158:8080/pageview" + param2; // リクエスト先URL
 var request = new XMLHttpRequest();
 request.open('GET', url);
 request.onreadystatechange = function () {
