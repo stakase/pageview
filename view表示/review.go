@@ -31,19 +31,16 @@ func (r Reviews) Less(i, j int) bool {
 
 
 func main() {
-  db, err := sql.Open("postgres", "user=xxxx password=xxxx dbname=xxxx sslmode=disable")
-  checkErr(err)
-
-  
-
   router := gin.Default()
   router.LoadHTMLGlob("template/*.tmpl")
 
   router.GET("/reviewlist", func(c *gin.Context) {
+    db, err := sql.Open("postgres", "user=xxxx password=xxxx dbname=xxxx sslmode=disable")
+    checkErr(err)
+
     // データの取得処理
     rows, err := db.Query("SELECT url FROM pageview GROUP BY url")
     checkErr(err)
-    
     
     urlList := []string{}
     for rows.Next() {
@@ -58,36 +55,14 @@ func main() {
     c.HTML(http.StatusOK, "reviewlist.tmpl", gin.H{
       "url": urlList,
     })
+
+    db.Close()
   })
 
   router.GET("/reviewdetail", func(c *gin.Context) {
     url := c.Query("url")
-
-    viewMap := map[int]int {}
-    for i := 0; i < 24; i++ {
-      viewMap[i] = 0;
-    }
-
-    // データの取得処理
-    rows, err := db.Query("SELECT looking_hour, sum(view_count) as view_count FROM pageview WHERE url = $1 GROUP BY looking_hour", url)
-    checkErr(err)
     
-    for rows.Next() {
-      var lookingHour int
-      var viewCount int
-
-      err = rows.Scan(&lookingHour, &viewCount)
-      checkErr(err)
-
-      viewMap[lookingHour] = viewCount
-    }
-
-    var reviews Reviews
-    for k, v := range viewMap {
-      review := Review{k, v}
-      reviews = append(reviews, review)
-    }
-    sort.Sort(reviews)
+    reviews := getPv(url)  // PV数取得処理
 
     c.HTML(http.StatusOK, "review.tmpl", gin.H{
       "review": reviews,
@@ -95,31 +70,7 @@ func main() {
   })
 
   router.GET("/reviewall", func(c *gin.Context) {
-    viewMap := map[int]int {}
-    for i := 0; i < 24; i++ {
-      viewMap[i] = 0;
-    }
-
-    // データの取得処理
-    rows, err := db.Query("SELECT looking_hour, sum(view_count) as view_count FROM pageview GROUP BY looking_hour")
-    checkErr(err)
-    
-    for rows.Next() {
-      var lookingHour int
-      var viewCount int
-
-      err = rows.Scan(&lookingHour, &viewCount)
-      checkErr(err)
-
-      viewMap[lookingHour] = viewCount
-    }
-
-    var reviews Reviews
-    for k, v := range viewMap {
-      review := Review{k, v}
-      reviews = append(reviews, review)
-    }
-    sort.Sort(reviews)
+    reviews := getPv("")  // PV数取得処理
 
     c.HTML(http.StatusOK, "review.tmpl", gin.H{
       "review": reviews,
@@ -127,8 +78,50 @@ func main() {
   })
   
   router.Run(":8080")
-  db.Close()
 }
+
+
+// PV数表示用処理
+func getPv(url string) (Reviews) {
+  // 初期化
+  viewMap := map[int]int {}
+  for i := 0; i < 24; i++ {
+    viewMap[i] = 0;
+  }
+
+  db, err := sql.Open("postgres", "user=exam password=exam dbname=exam sslmode=disable")
+  checkErr(err)
+  
+  var rows *sql.Rows
+  
+  if url =="" {
+    rows, err = db.Query("SELECT looking_hour, sum(view_count) as view_count FROM pageview GROUP BY looking_hour")
+    checkErr(err)
+
+  } else {
+    rows, err = db.Query("SELECT looking_hour, sum(view_count) as view_count FROM pageview WHERE url = $1 GROUP BY looking_hour", url)
+    checkErr(err)
+  }
+
+  for rows.Next() {
+    var lookingHour int
+    var viewCount int
+
+    err = rows.Scan(&lookingHour, &viewCount)
+    checkErr(err)
+
+    viewMap[lookingHour] = viewCount
+  }
+  
+  var reviews Reviews
+  for k, v := range viewMap {
+    review := Review{k, v}
+    reviews = append(reviews, review)
+  }
+  sort.Sort(reviews)
+
+  return reviews
+} 
 
 
 // DB関連のエラー判定
