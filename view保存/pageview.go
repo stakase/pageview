@@ -31,8 +31,6 @@ func main() {
       err = rows.Scan(&dataCount)
       checkErr(err)
 
-      fmt.Println(dataCount)
-
       dataCount2 = dataCount
     }
 
@@ -73,7 +71,6 @@ func main() {
       checkErr(err)
 
       fmt.Println(affect)
-
       fmt.Println("重複データあり")
     }
 

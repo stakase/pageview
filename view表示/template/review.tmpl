@@ -1,0 +1,26 @@
+<html>
+
+  <table>
+    <tr>
+      <td>時間帯</td>
+      <td>ビュー数</td>
+    </tr>
+    {{range .review}}
+    <tr>
+      <td>{{.Time}}時</td>
+      <td>{{.ViewCount}}</td>
+    </tr>
+    {{end}}
+  </table>
+
+<style>
+table {
+  border-collapse: collapse;
+}
+td {
+  border: solid 1px;
+  padding: 0.5em;
+}
+</style>
+
+</html>
