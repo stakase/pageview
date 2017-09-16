@@ -13,7 +13,7 @@ func main() {
   router.GET("/pageview", func(c *gin.Context) {
     path := c.Query("keyword")
 
-    db, err := sql.Open("postgres", "user=xxxxx password=xxxxx dbname=xxxxx sslmode=disable")
+    db, err := sql.Open("postgres", "user=xxxx password=xxxx dbname=xxxx sslmode=disable")
     checkErr(err)
 
     // 時間帯の取得
@@ -21,22 +21,13 @@ func main() {
     viewHour := t.Hour()
 
     // データの存在チェック
-    rows, err := db.Query("SELECT COUNT(1) FROM pageview WHERE url = $1 and looking_hour = $2", path, viewHour)
-    checkErr(err)
-
-    dataCount2 := 0
-
-    for rows.Next() {
-      var dataCount int
-      err = rows.Scan(&dataCount)
-      checkErr(err)
-
-      dataCount2 = dataCount
-    }
+    query := "SELECT url FROM pageview WHERE url = $1 and looking_hour = $2"
+    var url string
+    err = db.QueryRow(query, path, viewHour).Scan(&url)
+    fmt.Println(err)
 
     // データの挿入・更新
-    fmt.Println(dataCount2)
-    if dataCount2 == 0 {
+    if err == sql.ErrNoRows {
       stmt, err := db.Prepare("INSERT INTO pageview (url,looking_hour,view_count) VALUES($1,$2,$3)")
       checkErr(err)
 
@@ -49,6 +40,7 @@ func main() {
       checkErr(err)
 
       updateCount := 0
+      hour := 0
 
       for rows.Next() {
         var url string
@@ -58,20 +50,21 @@ func main() {
         checkErr(err)
 
         updateCount = viewCount + 1
+        hour = lookingHour
       }
 
       // データ更新処理
-      stmt, err := db.Prepare("update pageview set view_count=$1 where url=$2")
+      stmt, err := db.Prepare("update pageview set view_count=$1 where url=$2 and looking_hour = $3")
       checkErr(err)
 
-      res, err := stmt.Exec(updateCount, path)
+      res, err := stmt.Exec(updateCount, path, hour)
       checkErr(err)
 
-      affect, err := res.RowsAffected()
-      checkErr(err)
-
-      fmt.Println(affect)
-      fmt.Println("重複データあり")
+      if c, err := res.RowsAffected(); err != nil {
+        fmt.Println("RowsAffectedを取得できません。: %v", err)
+      } else {
+        fmt.Println("RowsAffected: %v", c)
+      }
     }
 
     db.Close()
